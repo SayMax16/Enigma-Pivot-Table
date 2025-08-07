@@ -1,239 +1,140 @@
-# Enigma Pivot Table Extractor
+# Qlik Sense Pivot Table Data Extractor
 
-An optimized Node.js application for extracting data from Qlik Sense pivot tables using enigma.js. This tool connects to your Qlik Sense app, makes specific field selections, and extracts pivot table data with performance optimizations for minimal CPU and memory usage.
+A comprehensive Node.js application for extracting pivot table data from Qlik Sense applications using the enigma.js library.
 
 ## Features
 
-- **Multiple Authentication Methods**: Certificate-based, API Key, and JWT authentication
-- **Optimized Data Extraction**: Paginated data fetching to minimize memory usage
-- **Automatic Retry Logic**: Handles aborted requests during heavy calculations
-- **Field Selection**: Automated selection of Завод and YearMonth fields
-- **Multiple Export Formats**: JSON and CSV output
-- **Real-time Monitoring**: Optional WebSocket traffic logging
-- **Performance Optimized**: Delta protocol, request batching, and memory management
+- **Clean Pivot Extraction**: Extract simplified pivot tables with material descriptions and financial measures
+- **Container-based Extraction**: Full container pivot table extraction with all dimensions and measures
+- **Field Selection**: Automated field selection and filtering (Plant, Time Period)
+- **Multiple Output Formats**: Export data as JSON and CSV
+- **Certificate-based Authentication**: Secure connection using Qlik Sense certificates
 
-## Prerequisites
+## Quick Start
 
-- Node.js >= 14.0
-- Access to Qlik Sense (on-premise or cloud)
-- Qlik Sense app with a pivot table object
-- Authentication credentials (certificates, API key, or JWT)
+### Prerequisites
 
-## Installation
+- Node.js 14.x or higher
+- Access to Qlik Sense server
+- Valid Qlik Sense certificates (client.pem, client_key.pem, root.pem)
 
-1. Clone the repository:
-```bash
-git clone https://github.com/SayMax16/Enigma-Pivot-Table.git
-cd Enigma-Pivot-Table
-```
+### Installation
+
+1. Clone the repository
 2. Install dependencies:
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
+3. Configure certificates in `config/certificates/`
+4. Set up environment variables in `.env` file
 
-3. Copy the environment configuration:
-```bash
-cp .env.example .env
-```
+### Environment Configuration
 
-4. Configure your settings in `.env` file
+Create a `.env` file with your Qlik Sense configuration:
 
-## Configuration
-
-### Environment Variables
-
-Edit the `.env` file with your Qlik Sense configuration:
-
-#### Connection Settings
 ```env
-QLIK_ENGINE_HOST=your-qlik-server.com
+QLIK_ENGINE_HOST=your-qlik-server-ip
 QLIK_ENGINE_PORT=4747
-QLIK_APP_ID=your-app-id-here
-```
-
-#### Authentication (choose one method)
-
-**Certificate Authentication (On-premise):**
-```env
-QLIK_AUTH_METHOD=certificates
-QLIK_USER_DIRECTORY=YOUR_DOMAIN
+QLIK_APP_ID=your-app-id
+QLIK_USER_DIRECTORY=your-domain
 QLIK_USER_ID=your-username
 QLIK_CERTIFICATES_PATH=./config/certificates
 ```
 
-**API Key Authentication (Qlik Cloud):**
-```env
-QLIK_AUTH_METHOD=apikey
-QLIK_API_KEY=your-api-key-here
-```
-
-**JWT Authentication:**
-```env
-QLIK_AUTH_METHOD=jwt
-QLIK_JWT_TOKEN=your-jwt-token-here
-```
-
-#### Data Settings
-```env
-QLIK_PIVOT_OBJECT_ID=your-pivot-object-id
-QLIK_ZAVOD_FIELD=Завод
-QLIK_ZAVOD_VALUE=1101
-QLIK_YEARMONTH_FIELD=YearMonth
-QLIK_YEARMONTH_VALUE=2025.01
-```
-
-### Certificate Setup (for on-premise)
-
-If using certificate authentication, place your certificate files in `config/certificates/`:
-- `root.pem` - Root certificate
-- `client.pem` - Client certificate  
-- `client_key.pem` - Client private key
-
 ## Usage
 
-### Basic Usage
+### Clean Pivot Table Extraction
 
-Run the data extraction:
+Extract a clean, simplified pivot table with material descriptions and 4 financial measures:
+
 ```bash
-npm start
+node extract-clean-pivot.js
 ```
 
-### Development Mode
+**Output:**
+- `clean_pivot_data.csv` - Material descriptions with financial measures
+- `clean_pivot_data.json` - Same data in JSON format
 
-Run with auto-restart on changes:
+**Data Structure:**
+- **Краткий текст материала** - Material Description
+- **На начало периода** - Beginning Balance
+- **ПМ за период** - Goods Received
+- **ОМ за период** - Goods Issued  
+- **На конец периода** - Ending Balance
+
+### Full Container Extraction
+
+Extract complete pivot table data from container objects:
+
 ```bash
-npm run dev
+node src/index.js
 ```
 
-### Programmatic Usage
+## Customization
+
+### Changing Selections
+
+Edit `extract-clean-pivot.js` to modify plant and time period:
 
 ```javascript
-const QlikPivotDataExtractor = require('./src/index');
-
-const extractor = new QlikPivotDataExtractor();
-
-extractor.run()
-  .then((data) => {
-    console.log('Data extracted successfully:', data.summary);
-  })
-  .catch((error) => {
-    console.error('Extraction failed:', error);
-  });
+const selections = [
+  { fieldName: 'Завод', value: '1101' },        // Plant
+  { fieldName: 'Год-Месяц', value: '2024-авг' } // Year-Month
+];
 ```
 
-## Output
+### Changing Dimensions
 
-The application generates two output files:
-
-1. **pivot_data.json** - Complete data with metadata in JSON format
-2. **pivot_data.csv** - Formatted data in CSV format
-
-### Data Structure
+Modify the dimension field in `extract-clean-pivot.js`:
 
 ```javascript
-{
-  "headers": [
-    { "name": "Завод", "type": "dimension", "index": 0 },
-    { "name": "YearMonth", "type": "dimension", "index": 1 },
-    { "name": "Revenue", "type": "measure", "index": 2 }
-  ],
-  "rows": [
-    {
-      "index": 0,
-      "data": {
-        "Завод": { "text": "1101", "number": 1101, "state": "S" },
-        "YearMonth": { "text": "2025.01", "number": null, "state": "S" },
-        "Revenue": { "text": "1,234,567", "number": 1234567, "state": "L" }
-      }
-    }
-  ],
-  "metadata": {
-    "dimensions": [...],
-    "measures": [...],
-    "totalRows": 150,
-    "extractedRows": 150
-  },
-  "summary": {
-    "totalRows": 150,
-    "totalColumns": 3,
-    "dimensions": 2,
-    "measures": 1
-  }
-}
+// Material Description (current)
+qFieldDefs: ['Краткий текст материала']
+
+// Alternative options:
+qFieldDefs: ['Номер материала']           // Material Code
+qFieldDefs: ['Группа товаров материала']   // Material Group
 ```
 
-## Performance Optimization
+## Project Structure
 
-The application includes several optimizations:
-
-- **Paginated Data Fetching**: Configurable page size (default: 1000 rows)
-- **Request Retry Logic**: Automatic retry for aborted requests
-- **Delta Protocol**: Reduced bandwidth usage (enabled by default)
-- **Memory Management**: Proper cleanup of objects and sessions
-- **Connection Reuse**: Single session for multiple operations
-
-### Performance Settings
-
-```env
-QLIK_PAGE_SIZE=1000        # Rows per page
-QLIK_MAX_PAGES=10          # Maximum pages to fetch
 ```
+├── config/
+│   └── certificates/          # Qlik Sense certificates
+├── src/
+│   ├── session-manager.js     # Connection management
+│   ├── field-selector.js      # Field selection logic
+│   ├── container-extractor.js # Container extraction
+│   ├── pivot-extractor.js     # Pivot data processing
+│   └── index.js              # Main application
+├── extract-clean-pivot.js     # Clean pivot extraction
+├── package.json
+└── README.md
+```
+
+## Data Quality
+
+The extraction provides complete data from the Qlik Sense model:
+- ✅ Beginning and ending balances match Qlik interface exactly
+- ✅ ПМ/ОМ values may be higher as they capture all transaction records
+- ✅ The Qlik interface may apply additional business rules or filtering
 
 ## Troubleshooting
 
-### Common Issues
+**Connection Issues:**
+- Verify certificates are correctly placed in `config/certificates/`
+- Check server IP and port in `.env` file
+- Ensure user has access to the specified app
 
-1. **Authentication Errors**
-   - Verify certificate files are in correct location
-   - Check user directory and user ID are correct
-   - Ensure API key has proper permissions
+**No Data Returned:**
+- Verify field names exist in the Qlik app
+- Check that the plant and time period values are valid
+- Run with different time periods to find data
 
-2. **Object Not Found**
-   - Verify the pivot object ID exists in the app
-   - Check app ID is correct
-   - Ensure user has access to the app
-
-3. **Field Selection Errors**
-   - Verify field names match exactly (case-sensitive)
-   - Check that field values exist in the data
-   - Ensure fields are available in the data model
-
-4. **Performance Issues**
-   - Reduce page size for large datasets
-   - Increase max pages limit if needed
-   - Enable traffic logging to debug requests
-
-### Debug Mode
-
-Enable traffic logging to see WebSocket communication:
-```env
-QLIK_ENABLE_TRAFFIC_LOGGING=true
-```
-
-## Architecture
-
-The application consists of four main components:
-
-- **SessionManager** (`src/session-manager.js`) - Handles Qlik Sense connections and authentication
-- **FieldSelector** (`src/field-selector.js`) - Manages field selections and filtering
-- **PivotExtractor** (`src/pivot-extractor.js`) - Extracts and formats pivot table data
-- **Main Application** (`src/index.js`) - Orchestrates the entire process
-
-## Error Handling
-
-The application includes comprehensive error handling:
-- Automatic retry for aborted requests
-- Graceful session cleanup
-- Detailed error logging
-- Fallback methods for data extraction
+**Permission Errors:**
+- Ensure user has read access to the Qlik app
+- Verify certificate authentication is properly configured
 
 ## License
 
-MIT License - see LICENSE file for details.
-
-## Support
-
-For issues related to:
-- **enigma.js**: Check the [enigma.js documentation](https://github.com/qlik-oss/enigma.js)
-- **Qlik Sense APIs**: Refer to [Qlik Sense Developer Documentation](https://help.qlik.com/en-US/sense-developer/)
-- **This Application**: Create an issue in the project repository
+MIT License

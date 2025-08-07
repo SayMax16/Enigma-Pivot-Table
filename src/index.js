@@ -4,7 +4,7 @@ const path = require('path');
 const SessionManager = require('./session-manager');
 const FieldSelector = require('./field-selector');
 const PivotExtractor = require('./pivot-extractor');
-const FieldDebugger = require('./field-debugger');
+const ContainerExtractor = require('./container-extractor');
 
 // Load environment variables
 dotenv.config();
@@ -14,6 +14,7 @@ class QlikPivotDataExtractor {
     this.sessionManager = null;
     this.fieldSelector = null;
     this.pivotExtractor = null;
+    this.containerExtractor = null;
     this.config = this.loadConfiguration();
   }
 
@@ -34,6 +35,7 @@ class QlikPivotDataExtractor {
       jwtToken: process.env.QLIK_JWT_TOKEN,
       
       // Data extraction settings
+      containerId: process.env.QLIK_CONTAINER_ID,
       pivotObjectId: process.env.QLIK_PIVOT_OBJECT_ID,
       
       // Field selection settings
@@ -90,10 +92,10 @@ class QlikPivotDataExtractor {
       // Connect to Qlik Sense
       const { doc } = await this.sessionManager.connect();
       
-      // Initialize field selector, pivot extractor, and debugger
+      // Initialize field selector, pivot extractor, and container extractor
       this.fieldSelector = new FieldSelector(doc);
       this.pivotExtractor = new PivotExtractor(doc);
-      this.fieldDebugger = new FieldDebugger(doc);
+      this.containerExtractor = new ContainerExtractor(doc);
       
       console.log('Initialization completed successfully');
       
@@ -152,8 +154,19 @@ class QlikPivotDataExtractor {
     try {
       console.log('Starting data extraction...');
       
-      // Get pivot object
-      const pivotObject = await this.pivotExtractor.getPivotObject(this.config.pivotObjectId);
+      let pivotObject;
+      
+      // Check if we're using container-based extraction
+      if (this.config.containerId) {
+        console.log('Using container-based extraction...');
+        pivotObject = await this.containerExtractor.extractPivotFromContainer(
+          this.config.containerId,
+          this.config.pivotObjectId
+        );
+      } else {
+        console.log('Using direct object extraction...');
+        pivotObject = await this.pivotExtractor.getPivotObject(this.config.pivotObjectId);
+      }
       
       // Extract data with optimization settings
       const extractedData = await this.pivotExtractor.extractPivotData(pivotObject, {
@@ -239,6 +252,9 @@ class QlikPivotDataExtractor {
       console.log('Starting Qlik Pivot Data Extraction...');
       console.log('Configuration:');
       console.log(`- App ID: ${this.config.appId}`);
+      if (this.config.containerId) {
+        console.log(`- Container ID: ${this.config.containerId}`);
+      }
       console.log(`- Pivot Object ID: ${this.config.pivotObjectId}`);
       console.log(`- ${this.config.zavodField}: ${this.config.zavodValue}`);
       console.log(`- ${this.config.yearMonthField}: ${this.config.yearMonthValue}`);
